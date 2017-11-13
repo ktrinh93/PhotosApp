@@ -1,9 +1,12 @@
 package com.example.kevin.photosapp;
 
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -11,12 +14,9 @@ import android.view.MenuItem;
 import android.graphics.Bitmap;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
-import com.zomato.photofilters.geometry.Point;
-import com.zomato.photofilters.SampleFilters;
-import com.zomato.photofilters.imageprocessors.Filter;
-import com.zomato.photofilters.imageprocessors.SubFilter;
-import com.zomato.photofilters.imageprocessors.subfilters.ToneCurveSubfilter;
+
 
 import java.io.IOException;
 
@@ -98,42 +98,41 @@ public class MainActivity extends AppCompatActivity {
 
     public void filter(Bitmap photo) {
         // according to PhotoDirector, "white square" is RGB(214, 204, 167)
-        // so correction should be RGB(41, 51, 88)
+        // so correction should be RGB(+0, +10, +47)
 
-        Filter myFilter = new Filter();
+        drawPhoto(photo);
 
-        Point[] rgbKnots = new Point[2];
-        rgbKnots[0] = new Point(0,0);
-        rgbKnots[1] = new Point(255,255);
-
-        Point[] red = new Point[2];
-        red[0] = new Point(0, 255);
-        red[1] = new Point(255, 255);
-        Log.v("RED", "Filtering...");
-
-        Point[] green = new Point[2];
-        green[0] = new Point(0, 255);
-        green[1] = new Point(255, 255);
-        Log.v("GREEN", "Filtering...");
-
-        Point[] blue = new Point[2];
-        blue[0] = new Point(0, 255);
-        blue[1] = new Point(255, 255);
-        Log.v("BLUE", "Filtering...");
-
-
-        myFilter.addSubFilter(new ToneCurveSubfilter(rgbKnots, red, green, blue));
-        Bitmap processedPhoto = myFilter.processFilter(photo);
-
-        drawPhoto(processedPhoto);
     }
 
     public void drawPhoto(Bitmap newPhoto) {
+
+        final Bitmap touchedPhoto = newPhoto;
+
         Log.v("DRAWING", "Drawing...");
         ImageView iv = new ImageView(this);
-        iv.setImageBitmap(newPhoto);
+        iv.setImageBitmap(touchedPhoto);
         iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
         llPhotoContainer.addView(iv);
+
+
+        iv.setOnTouchListener(new ImageView.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+
+                if(event.getAction() == MotionEvent.ACTION_UP) {
+                    int x = (int) event.getX();
+                    int y = (int) event.getY();
+                    int pixel = touchedPhoto.getPixel(x, y);
+
+                    int red = Color.red(pixel);
+                    int green = Color.green(pixel);
+                    int blue = Color.blue(pixel);
+
+                    Toast.makeText(getApplicationContext(), "RGB values: " + red + ", " + green + ", " + blue, Toast.LENGTH_SHORT).show();
+                }
+                return true;
+            }
+        });
     }
 
     @Override
