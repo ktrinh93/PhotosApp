@@ -116,23 +116,72 @@ public class MainActivity extends AppCompatActivity {
 
 
         iv.setOnTouchListener(new ImageView.OnTouchListener() {
+
             @Override
             public boolean onTouch(View v, MotionEvent event) {
 
-                if(event.getAction() == MotionEvent.ACTION_UP) {
-                    int x = (int) event.getX();
-                    int y = (int) event.getY();
-                    int pixel = touchedPhoto.getPixel(x, y);
+                int action = event.getAction();
 
-                    int red = Color.red(pixel);
-                    int green = Color.green(pixel);
-                    int blue = Color.blue(pixel);
+                switch (action) {
 
-                    Toast.makeText(getApplicationContext(), "RGB values: " + red + ", " + green + ", " + blue, Toast.LENGTH_SHORT).show();
+                    case MotionEvent.ACTION_UP:
+
+                        int x = (int) event.getX();
+                        int y = (int) event.getY();
+                        int pixel = touchedPhoto.getPixel(x, y);
+
+                        int[] rgbValues = new int[3];
+                        rgbValues[0] = Color.red(pixel);
+                        rgbValues[1] = Color.green(pixel);
+                        rgbValues[2] = Color.blue(pixel);
+
+                        int[] correctionMatrix = calcColorCorrectionMatrix(rgbValues, maxChannelIndex(rgbValues));
+
+                        Toast.makeText(getApplicationContext(), "RGB values: " + rgbValues[0] + ", " + rgbValues[1] + ", " + rgbValues[2], Toast.LENGTH_LONG).show();
+                        Toast.makeText(getApplicationContext(), "correction values: " + correctionMatrix[0] + ", " + correctionMatrix[1] + ", " + correctionMatrix[2], Toast.LENGTH_LONG).show();
+                        break;
+
+                    default:
+                        break;
                 }
+
                 return true;
+
             }
         });
+    }
+
+    // color correction works by balancing RGB values on a white pixel
+    // looks at highest channel value increases other channels to match
+    // according to PhotoDirector, "white" square is RGB(214, 204, 167)
+    // so correction should be RGB(+0, +10, +47)
+    public int[] calcColorCorrectionMatrix(int[] rgbValues, int maxChannelIndex) {
+
+        int[] correctionMatrix = new int[3];
+
+        for(int i = 0; i < rgbValues.length; i++) {
+            correctionMatrix[i] = rgbValues[maxChannelIndex] - rgbValues[i];
+        }
+
+        return correctionMatrix;
+
+    }
+
+    // returns the index of the channel with the highest value
+    // 0 = red, 1 = green, 2 = blue
+    public int maxChannelIndex(int[] rgbValues) {
+
+        int index = -1;
+        int colorValue = -1;
+
+        for(int i = 0; i < rgbValues.length; i++) {
+            if(rgbValues[i] > colorValue) {
+                index = i;
+                colorValue = rgbValues[i];
+            }
+        }
+
+        return index;
     }
 
     @Override
