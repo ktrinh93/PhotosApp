@@ -1,8 +1,10 @@
 package com.example.kevin.photosapp;
 
 import android.content.Intent;
+import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.drawable.BitmapDrawable;
+import android.graphics.Paint;
+import android.graphics.Matrix;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -31,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
     LinearLayout llPhotoContainer;
 
     static {
-        System.loadLibrary("NativeImageProcessor");
+        //System.loadLibrary("NativeImageProcessor");
     }
 
     @Override
@@ -104,12 +106,12 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void drawPhoto(Bitmap newPhoto) {
+    public void drawPhoto(final Bitmap newPhoto) {
 
         final Bitmap touchedPhoto = newPhoto;
 
         Log.v("DRAWING", "Drawing...");
-        ImageView iv = new ImageView(this);
+        final ImageView iv = new ImageView(this);
         iv.setImageBitmap(touchedPhoto);
         iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
         llPhotoContainer.addView(iv);
@@ -121,14 +123,29 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
 
                 int action = event.getAction();
+                int x = (int) event.getX();
+                int y = (int) event.getY();
+                int pixel = touchedPhoto.getPixel(x, y);
 
                 switch (action) {
 
-                    case MotionEvent.ACTION_UP:
+                    /*
+                    case MotionEvent.ACTION_DOWN:
+                    case MotionEvent.ACTION_MOVE:
+                        Canvas canvas = new Canvas(newPhoto);
+                        Paint p = new Paint();
 
-                        int x = (int) event.getX();
-                        int y = (int) event.getY();
-                        int pixel = touchedPhoto.getPixel(x, y);
+
+                        matrix.reset();
+                        matrix.postScale(2f, 2f, x, y);
+                        p.getShader().setLocalMatrix(matrix);
+                        canvas.drawCircle(x, y, 20, p);
+                        iv.invalidate();
+                        break;
+                    */
+
+
+                    case MotionEvent.ACTION_UP:
 
                         int[] rgbValues = new int[3];
                         rgbValues[0] = Color.red(pixel);
@@ -137,8 +154,14 @@ public class MainActivity extends AppCompatActivity {
 
                         int[] correctionMatrix = calcColorCorrectionMatrix(rgbValues, maxChannelIndex(rgbValues));
 
+                        Bitmap correctedPhoto = colorCorrect(touchedPhoto.copy(Bitmap.Config.ARGB_8888, true), correctionMatrix);
+
                         Toast.makeText(getApplicationContext(), "RGB values: " + rgbValues[0] + ", " + rgbValues[1] + ", " + rgbValues[2], Toast.LENGTH_LONG).show();
                         Toast.makeText(getApplicationContext(), "correction values: " + correctionMatrix[0] + ", " + correctionMatrix[1] + ", " + correctionMatrix[2], Toast.LENGTH_LONG).show();
+
+                        iv.setImageBitmap(correctedPhoto);
+                        iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
+
                         break;
 
                     default:
@@ -148,7 +171,43 @@ public class MainActivity extends AppCompatActivity {
                 return true;
 
             }
+
+
+
+
+
+
         });
+    }
+
+    // takes in a photo and a correction matrix
+    // changes each pixel according to the correction matrix
+    public Bitmap colorCorrect(Bitmap photo, int[] correctionMatrix) {
+
+        // copies(?) the original photo
+        Bitmap correctedPhoto = photo;
+
+        // array for storing the corrected RGB values for a given pixel
+        int[] correctedRGB = new int[3];
+
+        // iterating through each row and column of the photo...
+        for(int y = 0; y < photo.getHeight(); y++) {
+            for(int x = 0; x < photo.getWidth(); x++) {
+
+                // correctedRGB[i] = color of the original photo + correction factor for that channel
+                correctedRGB[0] = Color.red(photo.getPixel(x, y)) + correctionMatrix[0];
+                correctedRGB[1] = Color.green(photo.getPixel(x, y)) + correctionMatrix[1];
+                correctedRGB[2] = Color.blue(photo.getPixel(x, y)) + correctionMatrix[2];
+
+                // consolidates RGB values into a color integer
+                int correctPixelColor = Color.rgb(correctedRGB[0], correctedRGB[1], correctedRGB[2]);
+
+                // "writes" the adjusted pixel color to the correctedPhoto
+                correctedPhoto.setPixel(x, y, correctPixelColor);
+            }
+        }
+
+        return correctedPhoto;
     }
 
     // color correction works by balancing RGB values on a white pixel

@@ -17,6 +17,9 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    sourceSets.main {
+        jniLibs.srcDir 'src/main/libs'
+    }
 }
 
 dependencies {
@@ -28,7 +31,6 @@ dependencies {
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     compile 'com.android.support:design:26.+'
 
-    compile 'com.github.zomato:androidphotofilters:1.0.1'
     compile 'com.siclo.ezphotopick:library:1.0.7'
 
     testCompile 'junit:junit:4.12'
