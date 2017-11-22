@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Matrix;
+import android.graphics.RectF;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -32,28 +33,10 @@ public class MainActivity extends AppCompatActivity {
 
     LinearLayout llPhotoContainer;
 
-    static {
-        //System.loadLibrary("NativeImageProcessor");
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        /*
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-        */
 
         llPhotoContainer = (LinearLayout) findViewById(R.id.photo_container);
 
@@ -78,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        if (requestCode == EZPhotoPick.PHOTO_PICK_GALLERY_REQUEST_CODE || requestCode == EZPhotoPick.PHOTO_PICK_CAMERA_REQUEST_CODE) {
+        if (requestCode == EZPhotoPick.PHOTO_PICK_GALLERY_REQUEST_CODE) {
 
             Log.v("GOOD REQUEST CODE", "Good request code");
             Bitmap photo = null;
@@ -91,22 +74,15 @@ public class MainActivity extends AppCompatActivity {
 
             if(photo != null) {
                 Log.v("FILTERING", "Filtering...");
-                filter(photo);
+                filterAndDrawPhoto(photo);
             }
         } else {
             Log.v("BAD REQUEST CODE", "Bad request code");
         }
     }
 
-    public void filter(Bitmap photo) {
-        // according to PhotoDirector, "white square" is RGB(214, 204, 167)
-        // so correction should be RGB(+0, +10, +47)
 
-        drawPhoto(photo);
-
-    }
-
-    public void drawPhoto(final Bitmap newPhoto) {
+    public void filterAndDrawPhoto(final Bitmap newPhoto) {
 
         final Bitmap touchedPhoto = newPhoto;
 
@@ -119,6 +95,8 @@ public class MainActivity extends AppCompatActivity {
 
         iv.setOnTouchListener(new ImageView.OnTouchListener() {
 
+
+
             @Override
             public boolean onTouch(View v, MotionEvent event) {
 
@@ -129,20 +107,9 @@ public class MainActivity extends AppCompatActivity {
 
                 switch (action) {
 
-                    /*
                     case MotionEvent.ACTION_DOWN:
                     case MotionEvent.ACTION_MOVE:
-                        Canvas canvas = new Canvas(newPhoto);
-                        Paint p = new Paint();
-
-
-                        matrix.reset();
-                        matrix.postScale(2f, 2f, x, y);
-                        p.getShader().setLocalMatrix(matrix);
-                        canvas.drawCircle(x, y, 20, p);
-                        iv.invalidate();
                         break;
-                    */
 
 
                     case MotionEvent.ACTION_UP:
@@ -161,6 +128,8 @@ public class MainActivity extends AppCompatActivity {
 
                         iv.setImageBitmap(correctedPhoto);
                         iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
+
+                        // if user clicks reset, restores touchedPhoto
 
                         break;
 
