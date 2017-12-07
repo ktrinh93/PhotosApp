@@ -160,7 +160,7 @@ public class MagnifyingGlass extends AppCompatImageView{
 
                 int pixel = photo.getPixel(x, y);
 
-                // correctedRGB[i] = color of the original photo + correction factor for that channel
+                // correctedRGB[i] = color of the original photo * correction factor for that channel
                 correctedRGB[0] = Color.red(pixel) * correctionMatrix[0];
                 correctedRGB[1] = Color.green(pixel) * correctionMatrix[1];
                 correctedRGB[2] = Color.blue(pixel) * correctionMatrix[2];
@@ -177,35 +177,20 @@ public class MagnifyingGlass extends AppCompatImageView{
         return correctedPhoto;
     }
 
-    // white balance works by balancing RGB channels on a white pixel
-    // looks at highest channel value increases other channels to match
+    // white balance works by balancing RGB channels from a reference white pixel
+    // looks at relative percentage each channel needs to change to be balanced correctly
+    // aka scale the two lower channels to match the highest channel value
+
     // according to PhotoDirector, "white" square is RGB(214, 204, 167)
-    // so correction should be RGB(+0, +10, +47)
+    // highest channel value is 214
+    // so correction factor is (214/214 = 1, 214/204 = 1.049, 214/167 = 1.28)
+    // so correction should be original pixel RGB values * (1, 1.049, 1.28)
     public float[] calcColorCorrectionMatrix(int[] rgbValues, int maxChannelIndex) {
-
-        /* from PhotoDirector app
-
-         "pure" color patches from bad photo are:
-         white: (214, 204, 167)
-         grey: (97, 85, 55)
-         red: (158, 83, 33)
-         green: (86, 124, 66)
-         blue: (75, 80, 131)
-
-         after touching the white square
-
-         "pure" color patches from corrected photo are:
-         white: (214, 214, 214)
-         grey: (98, 90, 74)     d: (1, 5, 19)
-         red: (158, 86, 44)     d: (0, 1, 11)
-         green: (85, 132, 87)   d: (-1, 8, 21)
-         blue: (82, 85, 170)    d: (7, 5, 39)
-        */
-
 
         float[] correctionMatrix = new float[3];
         int maxChannelValue = rgbValues[maxChannelIndex];
 
+        // calculates correction factor
         for(int i = 0; i < rgbValues.length; i++) {
             correctionMatrix[i] = ((float)maxChannelValue)/((float)rgbValues[i]);
         }
