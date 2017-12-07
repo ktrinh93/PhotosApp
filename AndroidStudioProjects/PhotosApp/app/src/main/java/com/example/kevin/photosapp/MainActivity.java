@@ -19,8 +19,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
-
-
 import java.io.IOException;
 
 import siclo.com.ezphotopicker.api.EZPhotoPick;
@@ -28,10 +26,10 @@ import siclo.com.ezphotopicker.api.EZPhotoPickStorage;
 import siclo.com.ezphotopicker.api.models.EZPhotoPickConfig;
 import siclo.com.ezphotopicker.api.models.PhotoSource;
 
-
 public class MainActivity extends AppCompatActivity {
 
     LinearLayout llPhotoContainer;
+    static Bitmap correctedPhoto;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,7 +48,6 @@ public class MainActivity extends AppCompatActivity {
                 EZPhotoPick.startPhotoPickActivity(MainActivity.this, config);
             }
         });
-
 
     }
 
@@ -87,15 +84,27 @@ public class MainActivity extends AppCompatActivity {
         final Bitmap touchedPhoto = newPhoto;
 
         Log.v("DRAWING", "Drawing...");
-        final ImageView iv = new ImageView(this);
+        //final ImageView iv = new ImageView(this);
+        final MagnifyingGlass iv = new MagnifyingGlass(this);
+        iv.init(touchedPhoto);
         iv.setImageBitmap(touchedPhoto);
         iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
         llPhotoContainer.addView(iv);
 
 
         iv.setOnTouchListener(new ImageView.OnTouchListener() {
+                                  @Override
+                                  public boolean onTouch(View v, MotionEvent event) {
+                                      iv.onTouchEvent(event);
+                                      return true;
+                                  }
+                              });
 
 
+
+
+        /*
+        iv.setOnTouchListener(new ImageView.OnTouchListener() {
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -110,7 +119,6 @@ public class MainActivity extends AppCompatActivity {
                     case MotionEvent.ACTION_DOWN:
                     case MotionEvent.ACTION_MOVE:
                         break;
-
 
                     case MotionEvent.ACTION_UP:
 
@@ -129,6 +137,10 @@ public class MainActivity extends AppCompatActivity {
                         iv.setImageBitmap(correctedPhoto);
                         iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
 
+
+
+
+
                         // if user clicks reset, restores touchedPhoto
 
                         break;
@@ -136,25 +148,21 @@ public class MainActivity extends AppCompatActivity {
                     default:
                         break;
                 }
-
                 return true;
-
             }
+        });*/
 
-
-
-
-
-
-        });
     }
 
     // takes in a photo and a correction matrix
     // changes each pixel according to the correction matrix
+
+    // this URL wasn't used, but might be an interesting thing to look at
+    // https://github.com/pushd/colorpal
     public Bitmap colorCorrect(Bitmap photo, int[] correctionMatrix) {
 
         // copies(?) the original photo
-        Bitmap correctedPhoto = photo;
+        correctedPhoto = photo;
 
         // array for storing the corrected RGB values for a given pixel
         int[] correctedRGB = new int[3];
@@ -163,10 +171,12 @@ public class MainActivity extends AppCompatActivity {
         for(int y = 0; y < photo.getHeight(); y++) {
             for(int x = 0; x < photo.getWidth(); x++) {
 
+                int pixel = photo.getPixel(x, y);
+
                 // correctedRGB[i] = color of the original photo + correction factor for that channel
-                correctedRGB[0] = Color.red(photo.getPixel(x, y)) + correctionMatrix[0];
-                correctedRGB[1] = Color.green(photo.getPixel(x, y)) + correctionMatrix[1];
-                correctedRGB[2] = Color.blue(photo.getPixel(x, y)) + correctionMatrix[2];
+                correctedRGB[0] = Color.red(pixel) + correctionMatrix[0];
+                correctedRGB[1] = Color.green(pixel) + correctionMatrix[1];
+                correctedRGB[2] = Color.blue(pixel) + correctionMatrix[2];
 
                 // consolidates RGB values into a color integer
                 int correctPixelColor = Color.rgb(correctedRGB[0], correctedRGB[1], correctedRGB[2]);
@@ -179,11 +189,41 @@ public class MainActivity extends AppCompatActivity {
         return correctedPhoto;
     }
 
-    // color correction works by balancing RGB values on a white pixel
+    // white balance works by balancing RGB channels on a white pixel
     // looks at highest channel value increases other channels to match
     // according to PhotoDirector, "white" square is RGB(214, 204, 167)
     // so correction should be RGB(+0, +10, +47)
     public int[] calcColorCorrectionMatrix(int[] rgbValues, int maxChannelIndex) {
+
+        /* from PhotoDirector app
+
+         "pure" color patches from bad photo are:
+         white: (214, 204, 167)
+         grey: (97, 85, 55)
+         red: (158, 83, 33)
+         green: (86, 124, 66)
+         blue: (75, 80, 131)
+
+         after touching the white square
+
+         "pure" color patches from corrected photo are:
+         white: (214, 214, 214)
+         grey: (98, 90, 74)
+         red: (158, 86, 44)
+         green: (85, 132, 87)
+         blue: (82, 85, 170)
+
+         after touching the 18% grey square (from bad photo)
+         white: (206, 221, 250)
+         grey: (93, 93, 92)
+         red: (150, 88, 55)
+         green: (90, 136, 109)
+         blue: (90 , 90, 213)
+
+         Conclusion: PhotoDirector actually only does white balance, not color correction
+
+        */
+
 
         int[] correctionMatrix = new int[3];
 
